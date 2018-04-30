@@ -66,7 +66,7 @@ function problem = buildproblem(n, N, M, I, J, H, kappa1, kappa2, p, A, Ra)
         problem.disconnected = false;
     end
     
-    [maskI maskJ] = computemasks(N, I, J);
+    [maskI, maskJ] = computemasks(N, I, J);
     problem.maskI = maskI;
     problem.maskJ = maskJ;
     
