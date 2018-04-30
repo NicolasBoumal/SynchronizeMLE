@@ -15,6 +15,11 @@ function [C msecrb] = synchrocrb(problem)
 % expected squared distance between the relative rotation Ri*Rj^T and the
 % estimator of that relative rotation.
 %
+% This code for the CRB assumes the measurement graph is connected. If the
+% graph is not connected (or not numerically connected in case of very
+% small weights), the behaviour of this function is undefined. Most likely,
+% there will be an error or a warning when calling the 'inv' function.
+%
 % For SO(2), there are no curvature terms in the CRB.
 % For SO(3), the curvature terms are included in the CRB.
 % For SO(n), n >= 4, the curvature terms are neglected in the CRB.
@@ -36,14 +41,41 @@ function [C msecrb] = synchrocrb(problem)
     % information quality.
     L = synchrolaplacian(problem);
     
-    % Force rows and columns corresponding to anchors to zero.
-    LA = L;
-    LA(:, A) = 0;
-    LA(A, :) = 0;
+    % If this is anchor-free syncrhonization
+    if isempty(A)    
+        % The CRB is essentially the pseudoinverse of L.
+        % It can be computed generically as follows:
+        % iLA = pinv(full(L));
+        % This is rather slow. A faster way for anchor-free synchronization,
+        % following a suggestion by Kunal Chaudhury, is to leverage the
+        % fact that we know the null space of L: it is spanned by the vector
+        % of all ones (this is since we assume the graph is connected).
+        % Hence, by shifting the Laplacian along the null space direction,
+        % we make it invertible; calling inv is much faster than calling
+        % pinv. Then, simply remove the null space component.
+        iLA = inv(full(L) + ones(N)/N) - ones(N)/N;
+        % If you have a disconnected measurement graph but you are aware of
+        % it and know how to interpret the CRB then (see the paper), then
+        % it is better to call pinv: that is the correct formulation for
+        % the CRB when the graph is disconnected.
+        
+    % If this is anchored synchronization
+    else
+        % Similarly here, we could simply build the masked Laplacian LA by
+        % forcing rows and columns corresponding to anchors to zero:
+        % LA = L;
+        % LA(:, A) = 0;
+        % LA(A, :) = 0;
+        % iLA = pinv(full(LA));
+        % This code also works for anchor-free synchronozation by the way,
+        % but this is rather slow again. Instead, we know that this will
+        % give the same result as if we invert the non-masked entries of LA:
+        notA = setdiff(1:N, A);
+        iLA = zeros(size(L));
+        iLA(notA, notA) = inv(full(L(notA, notA)));
+        
+    end
     
-    % The CRB is essentially the pseudoinverse of LA.
-    % There may be better ways of computing this.
-    iLA = pinv(full(LA));
     
     % For n = 2, there is no curvature. For n = 3, we have an explicit
     % expression. For n >= 4, we have no expression (but the curvature
