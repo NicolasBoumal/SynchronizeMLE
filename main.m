@@ -27,13 +27,9 @@ close all;
 clc;
 
 if exist('manoptsolve', 'file') ~= 2
-    cd 'Manopt_1.0.4';
-    importmanopt;
-    cd ..;
-    warning('manopt:version', ['Using Manopt 1.0.4. This is probably not ' ...
-             'the most up-to-date version of Manopt. Please go to ' ...
-             'http://www.manopt.org to obtain the latest version.\n\n' ...
-             'Manopt 1.0.4 was added to your Matlab path.\n\n']);
+    warning('manopt:version', ['This code requires Manopt. Please go to ' ...
+             'http://www.manopt.org to obtain the latest version ' ...
+			 '(easy to install, we promise!)\n\n']);
 end
 
 
